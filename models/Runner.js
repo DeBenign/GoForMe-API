@@ -62,8 +62,16 @@ const runnerSchema = new mongoose.Schema(
     completedJobs: {
       type: Number,
       default: 0
-    }
-  },
+    },
+  // Add this inside runnerSchema — after completedJobs field
+  bank_details: {
+    account_number : { type: String, default: null },
+    bank_code      : { type: String, default: null },
+    bank_name      : { type: String, default: null },
+    account_name   : { type: String, default: null },
+    recipient_code : { type: String, default: null } // Paystack transfer recipient
+  }
+},
   { timestamps: true }
 )
  

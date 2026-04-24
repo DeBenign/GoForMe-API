@@ -853,6 +853,16 @@ const socket = io("http://localhost:5000", {
 | GET | `/payments/verify/:ref` | ✅ | Verify payment |
 | POST | `/payments/webhook` | ❌ | Paystack webhook |
 
+## Payouts
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/payouts/banks` | ✅ | pick a bank + get bank_code
+| POST | `/payouts/verify-account ` | ✅ | confirm account number is valid
+| POST | `/payouts/save-bank ` | ✅ | save bank to runner profile
+| POST | `/payouts/request ` | ✅ | trigger withdrawal
+| GET | `/payouts/history ` | ✅ |  see payout record
+                    → 
+
 ## Admin
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|

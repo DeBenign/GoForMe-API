@@ -20,13 +20,16 @@ const orderRoutes = require("./routes/order.routes")
 const paymentRoutes = require("./routes/payment.routes")
 const walletRoutes = require("./routes/wallet.routes")
 const adminRoutes = require("./routes/admin.routes")
-
+const payoutRoutes = require("./routes/payout.routes")
+const chatRoutes    = require("./routes/chat.routes")
+const disputeRoutes = require("./routes/dispute.routes")
 
 // Connect database
 connectDB().catch(err => {
   console.error("DB connection failed:", err)
   process.exit(1)
 })
+
 
 // Middlewares
 app.use(cors())
@@ -43,6 +46,9 @@ app.use(`${BASE_URL}/orders`, orderRoutes)
 app.use(`${BASE_URL}/payments`, paymentRoutes)
 app.use(`${BASE_URL}/wallet`, walletRoutes)
 app.use(`${BASE_URL}/admin`, adminRoutes)
+app.use(`${BASE_URL}/payouts`, payoutRoutes)
+app.use(`${BASE_URL}/chat`, chatRoutes)
+app.use(`${BASE_URL}/disputes`, disputeRoutes)
 
 // Health check
 app.get("/", (req, res) => {
