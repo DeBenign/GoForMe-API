@@ -4,7 +4,7 @@ const Order = require("../models/Order")
 const Runner = require("../models/Runner")
 
 // ── GET ALL USERS ─────────────────────────────────────
-exports.getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password -otp -refreshToken")
     return res.json({ success: true, count: users.length, data: users })
@@ -14,7 +14,7 @@ exports.getUsers = async (req, res) => {
 }
 
 // ── GET ALL ORDERS ────────────────────────────────────
-exports.getOrders = async (req, res) => {
+const getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate("user_id", "name email")
@@ -27,7 +27,7 @@ exports.getOrders = async (req, res) => {
 }
 
 // ── OVERRIDE ORDER (admin edit) ───────────────────────
-exports.overrideOrder = async (req, res) => {
+const overrideOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(
       req.params.id,
@@ -46,7 +46,7 @@ exports.overrideOrder = async (req, res) => {
 }
 
 // ── APPROVE RUNNER ────────────────────────────────────
-exports.approveRunner = async (req, res) => {
+const approveRunner = async (req, res) => {
   try {
     const runner = await Runner.findById(req.params.id)
 
@@ -70,7 +70,7 @@ exports.approveRunner = async (req, res) => {
 }
 
 // ── REJECT RUNNER ─────────────────────────────────────
-exports.rejectRunner = async (req, res) => {
+const rejectRunner = async (req, res) => {
   try {
     const runner = await Runner.findById(req.params.id)
 
@@ -91,3 +91,5 @@ exports.rejectRunner = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message })
   }
 }
+
+module.exports = { getUsers, getOrders, overrideOrder, approveRunner, rejectRunner}

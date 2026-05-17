@@ -2,7 +2,7 @@
 const paymentService = require("../services/payment.service")
 
 // ── INITIALIZE PAYMENT ────────────────────────────────
-exports.initializePayment = async (req, res) => {
+const initializePayment = async (req, res) => {
   try {
     const { email, amount } = req.body
 
@@ -34,7 +34,7 @@ exports.initializePayment = async (req, res) => {
 }
 
 // ── VERIFY PAYMENT (Paystack callback) ────────────────
-exports.verifyPayment = async (req, res) => {
+const verifyPayment = async (req, res) => {
   try {
     const { reference } = req.params
 
@@ -56,7 +56,7 @@ exports.verifyPayment = async (req, res) => {
 }
 
 // ── PAYSTACK WEBHOOK ──────────────────────────────────
-exports.webhook = async (req, res) => {
+const webhook = async (req, res) => {
   try {
     const signature = req.headers["x-paystack-signature"]
     await paymentService.handleWebhook(req.body, signature)
@@ -69,3 +69,5 @@ exports.webhook = async (req, res) => {
     return res.sendStatus(200) // Still 200 — never let Paystack retry endlessly
   }
 }
+
+module.exports = { initializePayment, verifyPayment, webhook }

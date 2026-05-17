@@ -5,7 +5,7 @@ const User = require("../models/User")
 // ── CREATE RUNNER (apply) ─────────────────────────────
 const createRunner = async (req, res) => {
   try {
-    const { user_id, skills, location } = req.body
+    const { user_id, skills, location, address, documents } = req.body
 
     if (!user_id || !location) {
       return res.status(400).json({
@@ -26,6 +26,8 @@ const createRunner = async (req, res) => {
       user_id,
       skills,
       location,
+      address,
+      documents,
       status: "pending"
     })
 

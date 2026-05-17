@@ -23,6 +23,32 @@ const runnerSchema = new mongoose.Schema(
       lat: { type: Number, default: null },
       lng: { type: Number, default: null }
     },
+
+   address: {
+  street : { type: String, default: null },
+  city   : { type: String, default: null },
+  state  : { type: String, default: null },
+  country: { type: String, default: "Nigeria" }
+},
+ 
+documents: {
+  id_type: {
+    type   : String,
+    enum   : ["national_id", "drivers_license", "voters_card", "passport", "nin_slip"],
+    default: null
+  },
+  id_number: { type: String, default: null },
+  id_image : {
+    url     : { type: String, default: null },
+    publicId: { type: String, default: null }
+  },
+  selfie: {
+    url     : { type: String, default: null },
+    publicId: { type: String, default: null }
+  },
+  verified      : { type: Boolean, default: false },
+  rejection_note: { type: String, default: null }
+},
  
     rating: {
       type: Number,
