@@ -8,8 +8,9 @@ const router           = express.Router()
 const protect          = require("../middleware/auth.middleware")
 const authorize        = require("../middleware/role.middleware")
 const onlyApprovedRunner = require("../middleware/runner.middleware")
+const upload           = require("../middleware/upload.middleware")
 const {
-  getRunners, getRunner, getMyRunnerProfile, createRunner,
+  getRunners, getRunner, getMyRunnerProfile, createRunner, uploadDocument,
   updateRunner, updateAvailability,
   toggleAvailability, updateLocation, deleteRunner
 } = require("../controllers/runner.controller")
@@ -18,6 +19,7 @@ const {
 router.patch("/toggle-availability", protect, toggleAvailability)  // runner toggles own status
 router.patch("/location", protect, updateLocation)       // runner updates own GPS
 router.get("/me", protect, getMyRunnerProfile)   // ADDED: runner's own profile, own id/status/availability
+router.post("/documents", protect, upload.single("image"), uploadDocument) // ADDED: ID photo / selfie upload
  
 // ── Collection routes ─────────────────────────────────
 router.get("/",    protect, getRunners)

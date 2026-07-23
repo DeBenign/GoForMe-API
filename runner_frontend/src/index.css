@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Third sibling in the theme system: admin is blue-grey, customer is
+     green-tinted, runner is warm amber-brown — dispatch-radio-at-dusk,
+     the color of being out on the road. Same shared amber accent across
+     all three apps ties the product together. */
+  --color-base: #1A140D;
+  --color-panel: #241C12;
+  --color-panel-raised: #2C2216;
+  --color-hairline: #3D2F1E;
+  --color-muted: #A79A87;
+  --color-faint: #6B5D49;
+  --color-ink: #F5F0E6;
+
+  --color-amber: #F0A93E;
+  --color-amber-dim: #4A3A1B;
+  --color-good: #4FBE7E;
+  --color-good-dim: #1A3324;
+  --color-bad: #EA5B58;
+  --color-bad-dim: #3B2020;
+  --color-info: #5AA9E8;
+  --color-info-dim: #1C2E3B;
+  --color-warn: #EFC24A;
+  --color-warn-dim: #3B331C;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--color-amber); color: #1a1206; }
+
+* { scrollbar-width: thin; scrollbar-color: var(--color-hairline) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-hairline); border-radius: 8px; }
+
+/* Reused from the customer app's signature element — the assigned errand
+   renders as the same paper-slip stub, just seen from the runner's side. */
+.ticket-edge {
+  background-image: radial-gradient(circle at 8px 0, transparent 7px, var(--color-panel) 7.5px);
+  background-size: 16px 8px;
+  background-repeat: repeat-x;
+  background-position: top left;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; }

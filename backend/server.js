@@ -23,6 +23,9 @@ const adminRoutes = require("./routes/admin.routes")
 const payoutRoutes = require("./routes/payout.routes")
 const chatRoutes    = require("./routes/chat.routes")
 const disputeRoutes = require("./routes/dispute.routes")
+const ratingRoutes = require("./routes/ratingRoutes")
+const promoRoutes = require("./routes/promoRoutes")
+const referralRoutes = require("./routes/referralRoutes")
 
 // Connect database
 connectDB().catch(err => {
@@ -35,7 +38,7 @@ connectDB().catch(err => {
 // FIX: cors() with no options reflects any origin — locked down to an
 // explicit allowlist. Set ALLOWED_ORIGINS in .env as a comma-separated list,
 // e.g. "https://goforme-admin.vercel.app,https://goforme.app"
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:5174")
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:5175")
   .split(",")
   .map(o => o.trim())
   .filter(Boolean)
@@ -67,6 +70,9 @@ app.use(`${BASE_URL}/admin`, adminRoutes)
 app.use(`${BASE_URL}/payouts`, payoutRoutes)
 app.use(`${BASE_URL}/chat`, chatRoutes)
 app.use(`${BASE_URL}/disputes`, disputeRoutes)
+app.use(`${BASE_URL}/ratings`, ratingRoutes)
+app.use(`${BASE_URL}/promos`, promoRoutes)
+app.use(`${BASE_URL}/referrals`, referralRoutes)
 
 // Health check
 app.get("/", (req, res) => {
@@ -74,6 +80,10 @@ app.get("/", (req, res) => {
     status: "GoForMe API Running"
   })
 })
+
+// Global error handler — must be registered last, after all routes
+const errorHandler = require("./middleware/error.middleware")
+app.use(errorHandler)
 
 //Server Port
 

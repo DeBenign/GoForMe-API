@@ -1,6 +1,66 @@
 // controllers/runner.controller.js
 const Runner = require("../models/Runner")
 const User = require("../models/User")
+const cloudinary = require("../config/cloudinary")
+
+// ── UPLOAD ID PHOTO / SELFIE ──────────────────────────
+// multipart/form-data, field name "image", plus a "type" field of
+// "id_image" or "selfie" to say which slot it fills. Only the runner
+// themself can upload onto their own profile — resolved via req.user._id,
+// never a runner id passed by the client, so one applicant can't overwrite
+// another's documents.
+const uploadDocument = async (req, res) => {
+  try {
+    const { type } = req.body
+
+    if (!["id_image", "selfie"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'type must be "id_image" or "selfie"'
+      })
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No image file provided" })
+    }
+
+    const runner = await Runner.findOne({ user_id: req.user._id })
+    if (!runner) {
+      return res.status(404).json({ success: false, message: "Runner profile not found" })
+    }
+
+    // Stream the in-memory buffer straight to Cloudinary — no temp file on disk.
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: `goforme/runner-documents/${runner._id}`,
+          resource_type: "image"
+        },
+        (error, result) => (error ? reject(error) : resolve(result))
+      )
+      stream.end(req.file.buffer)
+    })
+
+    runner.documents[type] = {
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id
+    }
+    await runner.save()
+
+    return res.json({
+      success: true,
+      message: `${type === "id_image" ? "ID photo" : "Selfie"} uploaded`,
+      data: runner.documents[type]
+    })
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to upload document",
+      error: error.message
+    })
+  }
+}
 
 // ── CREATE RUNNER (apply) ─────────────────────────────
 const createRunner = async (req, res) => {
@@ -31,8 +91,10 @@ const createRunner = async (req, res) => {
       status: "pending"
     })
 
-    // Upgrade user role to runner
-    await User.findByIdAndUpdate(user_id, { role: "runner" })
+    // NOTE: role stays "customer" until admin approval — see admin.controller.js
+    // approveRunner(), which is now where the role flip happens. Flipping it
+    // here (before any vetting) let an unapproved applicant carry the
+    // "runner" role immediately.
 
     return res.status(201).json({
       success: true,
@@ -252,6 +314,7 @@ const deleteRunner = async (req, res) => {
 
 module.exports = {
   createRunner,
+  uploadDocument,
   getMyRunnerProfile,
   getRunners,
   getRunner,

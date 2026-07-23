@@ -74,6 +74,21 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+
+    // Referral program — code this user can share, and who referred them
+    // (if anyone). Reward crediting/state lives in the separate Referral
+    // collection; these two fields are just for lookup and display.
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true, // allows many docs with no code yet without violating uniqueness
+      index: true
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
     }
   },
   { timestamps: true }

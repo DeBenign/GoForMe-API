@@ -58,10 +58,59 @@ const approveRunner = async (req, res) => {
     runner.isAvailable = true
     await runner.save()
 
+    // Role flip now happens here, at approval, not at application time
+    // (see runner.controller.js createRunner — the flip used to live there)
+    await User.findByIdAndUpdate(runner.user_id, { role: "runner" })
+
     return res.json({
       success: true,
       message: "Runner approved successfully",
       data: runner
+    })
+
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message })
+  }
+}
+
+// ── PROMOTE / CHANGE USER ROLE (admin only) ───────────
+// Lets an existing admin grant or revoke admin/runner/customer roles
+// without touching the database directly. Deliberately admin-only —
+// gated by the same adminAuth middleware as every other route in this file.
+const VALID_ROLES = ["customer", "runner", "admin"]
+
+const promoteUser = async (req, res) => {
+  try {
+    const { role } = req.body
+    const { id } = req.params
+
+    if (!VALID_ROLES.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `role must be one of: ${VALID_ROLES.join(", ")}`
+      })
+    }
+
+    // Prevent an admin from accidentally demoting themselves and getting
+    // locked out — require a different admin to do it.
+    if (id === req.user._id.toString() && role !== "admin") {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot change your own role. Ask another admin to do this."
+      })
+    }
+
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true })
+      .select("-password -otp -refreshToken")
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" })
+    }
+
+    return res.json({
+      success: true,
+      message: `User role updated to ${role}`,
+      data: user
     })
 
   } catch (error) {
@@ -92,4 +141,4 @@ const rejectRunner = async (req, res) => {
   }
 }
 
-module.exports = { getUsers, getOrders, overrideOrder, approveRunner, rejectRunner}
+module.exports = { getUsers, getOrders, overrideOrder, approveRunner, rejectRunner, promoteUser }

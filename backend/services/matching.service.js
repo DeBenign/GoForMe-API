@@ -13,6 +13,7 @@ exports.matchRunnerToOrder = async (order) => {
   const runners = await Runner.find({
     status     : "approved",
     isAvailable: true,
+    _id        : { $nin: order.declinedBy || [] },
     "location.lat": { $ne: null },
     "location.lng": { $ne: null }
   })

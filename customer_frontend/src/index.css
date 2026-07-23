@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Light theme, warm green identity (customer app = errands, growth,
+     "go"). Shared amber accent (#F0A93E) matches the logo mark and ties
+     all three apps together. */
+  --color-base: #FFFFFF;
+  --color-panel: #F6F9F6;
+  --color-panel-raised: #EDF3ED;
+  --color-hairline: #DCE7DE;
+  --color-muted: #4B5A50;
+  --color-faint: #8A988E;
+  --color-ink: #16211A;
+
+  --color-amber: #F0A93E;
+  --color-amber-dim: #FBEDD3;
+  --color-good: #2E9F63;
+  --color-good-dim: #E3F5EA;
+  --color-bad: #D6453F;
+  --color-bad-dim: #FBEAE9;
+  --color-info: #2E86D6;
+  --color-info-dim: #E7F1FB;
+  --color-warn: #B9800F;
+  --color-warn-dim: #FBF2DE;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--color-amber); color: #1a1206; }
+
+* { scrollbar-width: thin; scrollbar-color: var(--color-hairline) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-hairline); border-radius: 8px; }
+
+/* Signature element — the errand notes people hand-write for house help
+   or okada riders, reimagined as a paper-slip stub with a perforated top
+   edge. Reused by the runner app for the same order, seen from their side. */
+.ticket-edge {
+  background-image: radial-gradient(circle at 8px 0, transparent 7px, var(--color-panel) 7.5px);
+  background-size: 16px 8px;
+  background-repeat: repeat-x;
+  background-position: top left;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+@keyframes travel {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}
+
+:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; }

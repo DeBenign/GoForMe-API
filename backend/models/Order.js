@@ -68,6 +68,13 @@ const orderSchema = new mongoose.Schema(
       default: "pending"
     },
 
+    // Runners who declined this order — excluded from rematching so the
+    // same runner isn't offered the same errand twice in a row.
+    declinedBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Runner",
+      default: []
+    },
     // Timestamps for key status changes
     completedAt: { type: Date, default: null },
     cancelledAt: { type: Date, default: null }

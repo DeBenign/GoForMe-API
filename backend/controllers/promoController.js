@@ -29,7 +29,7 @@ async function validateAndCompute(code, userId, orderValue) {
   }
 
   if (promo.firstOrderOnly) {
-    const priorOrders = await Order.countDocuments({ customer: userId, status: 'completed' });
+    const priorOrders = await Order.countDocuments({ user_id: userId, status: 'completed' });
     if (priorOrders > 0) {
       throw { status: 400, message: 'This promo code is for first-time customers only' };
     }
@@ -57,7 +57,7 @@ async function validateAndCompute(code, userId, orderValue) {
 exports.previewPromo = async (req, res) => {
   try {
     const { code, orderValue } = req.body;
-    const { discount } = await validateAndCompute(code, req.user.id, orderValue);
+    const { discount } = await validateAndCompute(code, req.user._id, orderValue);
     res.json({ valid: true, discount, finalAmount: orderValue - discount });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message || 'Failed to validate promo code' });
@@ -65,25 +65,37 @@ exports.previewPromo = async (req, res) => {
 };
 
 /**
- * Internal helper — call from your existing createOrder() controller.
- * Applies the discount, records the redemption, and increments counters.
- * Not an HTTP route. Returns { discount, finalAmount } or null if no code given.
+ * Internal helper — validates a code and computes the discount, without
+ * side effects. Call this BEFORE creating the order (so the discounted
+ * amount can be deducted from the wallet in one step), then call
+ * recordRedemption() after the order exists to log it and bump counters.
  */
-exports.applyPromoToOrder = async (code, userId, orderId, orderValue) => {
-  if (!code) return null;
+exports.computeDiscount = validateAndCompute;
 
-  const { promo, discount } = await validateAndCompute(code, userId, orderValue);
-
+/**
+ * Internal helper — records a redemption and increments the promo's
+ * counters. Needs a real orderId, so this runs after Order.create().
+ */
+exports.recordRedemption = async (promo, userId, orderId, discount) => {
   await PromoRedemption.create({
     promoCode: promo._id,
     user: userId,
     order: orderId,
     discountApplied: discount,
   });
-
   promo.redemptionCount += 1;
   await promo.save();
+};
 
+/**
+ * Internal helper — validates + records in one call. Kept for convenience;
+ * order.controller.js uses the two split functions above instead, since it
+ * needs to know the discount before the order (and its id) exist.
+ */
+exports.applyPromoToOrder = async (code, userId, orderId, orderValue) => {
+  if (!code) return null;
+  const { promo, discount } = await validateAndCompute(code, userId, orderValue);
+  await exports.recordRedemption(promo, userId, orderId, discount);
   return { discount, finalAmount: orderValue - discount };
 };
 
@@ -93,7 +105,7 @@ exports.applyPromoToOrder = async (code, userId, orderId, orderValue) => {
  */
 exports.createPromo = async (req, res) => {
   try {
-    const promo = await PromoCode.create({ ...req.body, createdBy: req.user.id });
+    const promo = await PromoCode.create({ ...req.body, createdBy: req.user._id });
     res.status(201).json({ message: 'Promo code created', promo });
   } catch (err) {
     if (err.code === 11000) {

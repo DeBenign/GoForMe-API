@@ -9,7 +9,7 @@ const protect          = require("../middleware/auth.middleware")
 const onlyApprovedRunner = require("../middleware/runner.middleware")
 const {
   createOrder, getOrders, getRunnerOrders, getOrder,
-  acceptOrder, startOrder, completeOrder, cancelOrder
+  acceptOrder, startOrder, completeOrder, declineOrder, cancelOrder
 } = require("../controllers/order.controller")
  
 router.post("/",    protect, createOrder)   // Customer creates order
@@ -21,6 +21,7 @@ router.get("/:id",  protect, getOrder)      // Get single order detail
 router.patch("/:id/accept",   protect, onlyApprovedRunner(true),  acceptOrder)
 router.patch("/:id/start",    protect, onlyApprovedRunner(false), startOrder)    // already on job
 router.patch("/:id/complete", protect, onlyApprovedRunner(false), completeOrder) // already on job
+router.patch("/:id/decline",  protect, onlyApprovedRunner(false), declineOrder)  // ADDED: decline a freshly auto-matched errand
 router.patch("/:id/cancel",   protect, cancelOrder)
  
 module.exports = router

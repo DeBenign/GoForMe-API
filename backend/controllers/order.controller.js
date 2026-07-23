@@ -3,12 +3,14 @@ const Runner = require("../models/Runner")
 const Wallet = require("../models/Wallet")
 const matchingService = require("../services/matching.service")
 const { getIO } = require("../config/socket")
+const { computeDiscount, recordRedemption } = require("./promoController")
+const { tryQualifyReferralOnOrderComplete } = require("./referralController")
  
 // ── CREATE ORDER + AUTO MATCH ─────────────────────────
 const createOrder = async (req, res) => {
   try {
-    const { title, pickup_location, dropoff_location, description, price, category } = req.body
- 
+    const { title, pickup_location, dropoff_location, description, price, category, promoCode } = req.body
+
     if (!pickup_location || !price) {
       return res.status(400).json({
         success: false,
@@ -23,7 +25,24 @@ const createOrder = async (req, res) => {
         message: `Category must be one of: ${VALID_CATEGORIES.join(", ")}`
       })
     }
- 
+
+    // Promo code (optional) — validated before wallet deduction so the
+    // discounted amount, not the sticker price, is what actually gets charged.
+    let chargeAmount = price
+    let appliedPromo = null
+    if (promoCode) {
+      try {
+        const { promo, discount } = await computeDiscount(promoCode, req.user._id, price)
+        appliedPromo = promo
+        chargeAmount = price - discount
+      } catch (err) {
+        return res.status(err.status || 400).json({
+          success: false,
+          message: err.message || "Invalid promo code"
+        })
+      }
+    }
+
     const wallet = await Wallet.findOne({ user_id: req.user._id })
  
     if (!wallet) {
@@ -44,22 +63,21 @@ const createOrder = async (req, res) => {
       })
     }
  
-    if (wallet.balance < price) {
+    if (wallet.balance < chargeAmount) {
       return res.status(400).json({
         success: false,
         message: "Insufficient wallet balance to cover this order.",
         currentBalance: wallet.balance,
-        orderPrice    : price,
-        shortfall     : price - wallet.balance
+        orderPrice    : chargeAmount,
+        shortfall     : chargeAmount - wallet.balance
       })
     }
  
-    // FIX A: clean up the transaction push — use destructured `price` not req.body.price
-    wallet.balance -= price
+    wallet.balance -= chargeAmount
     wallet.transactions.push({
-      amount: price,
+      amount: chargeAmount,
       type  : "debit",
-      reason: "Errand payment"
+      reason: appliedPromo ? `Errand payment (promo ${appliedPromo.code} applied)` : "Errand payment"
     })
     await wallet.save()
  
@@ -69,10 +87,14 @@ const createOrder = async (req, res) => {
       pickup_location,
       dropoff_location,
       description,
-      price,
+      price: chargeAmount,
       category,
       status: "pending"
     })
+
+    if (appliedPromo) {
+      await recordRedemption(appliedPromo, req.user._id, order._id, price - chargeAmount)
+    }
  
     const runner = await matchingService.matchRunnerToOrder(order)
  
@@ -256,6 +278,10 @@ const completeOrder = async (req, res) => {
     runner.isAvailable    = true
     runner.currentOrder   = null
     await runner.save()
+
+    // Referral reward check — no-op unless this customer was referred and
+    // this is their first-ever completed order.
+    await tryQualifyReferralOnOrderComplete(order.user_id, order._id)
  
     const io = getIO()
     io.to(`order_${order._id}`).emit("orderCompleted", {
@@ -327,6 +353,71 @@ const cancelOrder = async (req, res) => {
   }
 }
  
+// ── DECLINE ORDER (runner) ────────────────────────────
+// A runner can only decline while the errand is still fresh ("accepted",
+// i.e. just auto-matched, before they've started it). Frees this runner,
+// records them in declinedBy so they're not offered the same errand again,
+// and re-runs matching to find the next-nearest available runner.
+const declineOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" })
+    }
+
+    const runner = await Runner.findOne({ user_id: req.user._id })
+    if (!runner || !order.runner_id || order.runner_id.toString() !== runner._id.toString()) {
+      return res.status(403).json({ success: false, message: "Not your order" })
+    }
+
+    if (order.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot decline an errand that is already "${order.status}"`
+      })
+    }
+
+    runner.isAvailable = true
+    await runner.save()
+
+    order.declinedBy.push(runner._id)
+    order.runner_id = null
+    order.status    = "pending"
+    await order.save()
+
+    const nextRunner = await matchingService.matchRunnerToOrder(order)
+
+    if (nextRunner) {
+      order.runner_id    = nextRunner._id
+      order.status       = "accepted"
+      nextRunner.isAvailable = false
+      await nextRunner.save()
+      await order.save()
+
+      const io = getIO()
+      io.to(`user_${nextRunner.user_id}`).emit("newOrder", {
+        message: "New order assigned to you",
+        order
+      })
+    }
+
+    return res.json({
+      success: true,
+      message: nextRunner
+        ? "Declined — reassigned to another runner"
+        : "Declined — searching for another runner",
+      data: order
+    })
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to decline order",
+      error  : error.message
+    })
+  }
+}
+
 module.exports = {
   createOrder,
   getOrders,
@@ -335,5 +426,6 @@ module.exports = {
   acceptOrder,
   startOrder,
   completeOrder,
+  declineOrder,
   cancelOrder
 }

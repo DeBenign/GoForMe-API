@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Light theme, cool blue-grey identity (admin is the "control room" of
+     the three apps). Shared amber accent (#F0A93E) ties all three apps
+     together — same value as the GoForMe logo mark's gradient. */
+  --color-base: #FFFFFF;
+  --color-panel: #F7F8FA;
+  --color-panel-raised: #EFF1F5;
+  --color-hairline: #E2E5EC;
+  --color-muted: #64687A;
+  --color-faint: #9CA0B0;
+  --color-ink: #1B1D27;
+
+  --color-amber: #F0A93E;
+  --color-amber-dim: #FBEDD3;
+  --color-good: #2E9F63;
+  --color-good-dim: #E3F5EA;
+  --color-bad: #D6453F;
+  --color-bad-dim: #FBEAE9;
+  --color-info: #2E86D6;
+  --color-info-dim: #E7F1FB;
+  --color-warn: #B9800F;
+  --color-warn-dim: #FBF2DE;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-amber);
+  color: #1a1206;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-hairline); border-radius: 8px; }
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker-scroll 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker { animation: none; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
