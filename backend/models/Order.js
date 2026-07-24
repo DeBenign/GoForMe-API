@@ -44,6 +44,25 @@ const orderSchema = new mongoose.Schema(
       min: [0, "Price cannot be negative"]
     },
 
+    // Platform commission — split out of `price` at order creation, using
+    // whatever rate was configured that day. Stored per-order (not just
+    // computed live from a global rate) so historical orders keep the rate
+    // that actually applied to them if the rate changes later, and so
+    // completeOrder always knows exactly what to pay the runner without
+    // recomputing anything.
+    commissionRate: {
+      type: Number,
+      default: 0
+    },
+    commissionAmount: {
+      type: Number,
+      default: 0
+    },
+    runnerPayout: {
+      type: Number,
+      default: 0
+    },
+
     pickup_location: {
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },

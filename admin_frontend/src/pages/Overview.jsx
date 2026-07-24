@@ -51,6 +51,9 @@ export default function Overview() {
     const gmv = orders
       .filter((o) => o.status === "completed")
       .reduce((sum, o) => sum + (o.price || 0), 0)
+    const platformRevenue = orders
+      .filter((o) => o.status === "completed")
+      .reduce((sum, o) => sum + (o.commissionAmount || 0), 0)
     return {
       activeOrders: activeOrders.length,
       totalOrders: orders.length,
@@ -59,6 +62,7 @@ export default function Overview() {
       approvedRunners: runners.filter((r) => r.status === "approved").length,
       openDisputes: openDisputes.length,
       gmv,
+      platformRevenue,
     }
   }, [orders, users, runners, disputes])
 
@@ -99,9 +103,10 @@ export default function Overview() {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Active errands" value={stats.activeOrders} sub={`${stats.totalOrders} total`} accent />
         <StatCard label="Completed GMV" value={formatNaira(stats.gmv)} sub="all-time" />
+        <StatCard label="Platform revenue" value={formatNaira(stats.platformRevenue)} sub="commission, all-time" accent />
         <StatCard label="Runners" value={stats.approvedRunners} sub={`${stats.pendingRunners} awaiting review`} />
         <StatCard label="Open disputes" value={stats.openDisputes} sub={`${disputes.length} recent`} />
       </div>

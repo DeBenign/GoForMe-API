@@ -5,28 +5,29 @@
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Third sibling in the theme system: admin is blue-grey, customer is
-     green-tinted, runner is warm amber-brown — dispatch-radio-at-dusk,
-     the color of being out on the road. Same shared amber accent across
-     all three apps ties the product together. */
-  --color-base: #1A140D;
-  --color-panel: #241C12;
-  --color-panel-raised: #2C2216;
-  --color-hairline: #3D2F1E;
-  --color-muted: #A79A87;
-  --color-faint: #6B5D49;
-  --color-ink: #F5F0E6;
+  /* Light theme, warm cream identity (runner is out on the road — kept
+     warm/amber-tinted to stand apart from admin's cool blue-grey and
+     customer's green, but now on a white base like the other two apps,
+     matching the clean, light template direction). Shared amber accent
+     (#F0A93E) ties all three apps together. */
+  --color-base: #FFFFFF;
+  --color-panel: #FBF7F1;
+  --color-panel-raised: #F5EDE0;
+  --color-hairline: #EDE0CC;
+  --color-muted: #7A6B54;
+  --color-faint: #A89877;
+  --color-ink: #241C12;
 
   --color-amber: #F0A93E;
-  --color-amber-dim: #4A3A1B;
-  --color-good: #4FBE7E;
-  --color-good-dim: #1A3324;
-  --color-bad: #EA5B58;
-  --color-bad-dim: #3B2020;
-  --color-info: #5AA9E8;
-  --color-info-dim: #1C2E3B;
-  --color-warn: #EFC24A;
-  --color-warn-dim: #3B331C;
+  --color-amber-dim: #FBEDD3;
+  --color-good: #2E9F63;
+  --color-good-dim: #E3F5EA;
+  --color-bad: #D6453F;
+  --color-bad-dim: #FBEAE9;
+  --color-info: #2E86D6;
+  --color-info-dim: #E7F1FB;
+  --color-warn: #B9800F;
+  --color-warn-dim: #FBF2DE;
 }
 
 body {
@@ -58,3 +59,50 @@ body {
 .animate-pulse-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
 
 :focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; }
+
+/* ── Shared component classes (Edupay-inspired conventions: .card,
+   .btn-*, .input — a consistent semantic layer instead of repeating raw
+   utility strings on every button/input in every page) ─────────────── */
+.card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-hairline);
+  border-radius: 1rem;
+}
+.input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.5rem;
+  background: var(--color-panel-raised);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+}
+.input::placeholder { color: var(--color-faint); }
+.input:focus { outline: none; border-color: var(--color-amber); }
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-amber); color: #1a1206;
+  font-size: 0.875rem; font-weight: 600;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; }
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-base); color: var(--color-muted);
+  border: 1px solid var(--color-hairline);
+  font-size: 0.875rem; font-weight: 500;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { color: var(--color-ink); border-color: var(--color-amber); }
+.btn-danger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-bad-dim); color: var(--color-bad);
+  border: 1px solid color-mix(in srgb, var(--color-bad) 30%, transparent);
+  font-size: 0.875rem; font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn-danger:hover { opacity: 0.9; }

@@ -70,15 +70,14 @@ export function AuthProvider({ children }) {
         setError(data.message || "Login failed")
         return false
       }
-      // FIX: previously any role could log into the customer app with no
-      // signal anything was off. Runner and admin accounts belong on their
-      // own frontends.
-      if (data.user.role === "admin") {
-        setError("This is an admin account. Please use the dispatch console instead.")
+      // Only admin accounts belong on the dispatch console. Customer and
+      // runner accounts have their own apps.
+      if (data.user.role === "customer") {
+        setError("This is a customer details you supply. Please use the customer webpage instead.")
         return false
       }
       if (data.user.role === "runner") {
-        setError("This is a runner account. Please use the runner app instead.")
+        setError("This is a runner details you supply. Please use the runner webpage instead.")
         return false
       }
       setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })

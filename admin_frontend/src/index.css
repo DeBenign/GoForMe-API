@@ -70,3 +70,50 @@ body {
   outline: 2px solid var(--color-amber);
   outline-offset: 2px;
 }
+
+/* ── Shared component classes (Edupay-inspired conventions: .card,
+   .btn-*, .input — a consistent semantic layer instead of repeating raw
+   utility strings on every button/input in every page) ─────────────── */
+.card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-hairline);
+  border-radius: 1rem;
+}
+.input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.5rem;
+  background: var(--color-panel-raised);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+}
+.input::placeholder { color: var(--color-faint); }
+.input:focus { outline: none; border-color: var(--color-amber); }
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-amber); color: #1a1206;
+  font-size: 0.875rem; font-weight: 600;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; }
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-base); color: var(--color-muted);
+  border: 1px solid var(--color-hairline);
+  font-size: 0.875rem; font-weight: 500;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { color: var(--color-ink); border-color: var(--color-amber); }
+.btn-danger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.625rem 1rem; border-radius: 0.5rem;
+  background: var(--color-bad-dim); color: var(--color-bad);
+  border: 1px solid color-mix(in srgb, var(--color-bad) 30%, transparent);
+  font-size: 0.875rem; font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn-danger:hover { opacity: 0.9; }

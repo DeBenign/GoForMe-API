@@ -1,10 +1,11 @@
-import { LogOut, User, Star, MapPin } from "lucide-react"
+import { User, Star, MapPin } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 import { useRunnerProfile } from "../context/RunnerProfileContext"
 import TopBar from "../components/TopBar"
+import ReferralCard from "../components/ReferralCard"
 
 export default function Profile() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const { runner } = useRunnerProfile()
 
   return (
@@ -46,12 +47,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <button
-          onClick={logout}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-bad/30 bg-bad-dim py-3 text-sm font-medium text-bad transition-opacity hover:opacity-90"
-        >
-          <LogOut size={15} /> Sign out
-        </button>
+        <ReferralCard />
       </div>
     </div>
   )

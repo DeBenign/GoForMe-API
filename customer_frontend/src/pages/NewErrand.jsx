@@ -26,6 +26,10 @@ export default function NewErrand() {
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [promoCode, setPromoCode] = useState("")
+  const [promoChecking, setPromoChecking] = useState(false)
+  const [promoResult, setPromoResult] = useState(null) // { discount, finalAmount } | null
+  const [promoError, setPromoError] = useState(null)
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
@@ -45,6 +49,28 @@ export default function NewErrand() {
       },
       { enableHighAccuracy: true, timeout: 8000 }
     )
+  }
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return
+    if (!price || Number(price) <= 0) {
+      setPromoError("Enter what you'll pay first, then apply the code.")
+      return
+    }
+    setPromoChecking(true)
+    setPromoError(null)
+    setPromoResult(null)
+    try {
+      const { data } = await api.post("/promos/preview", {
+        code: promoCode.trim(),
+        orderValue: Number(price),
+      })
+      setPromoResult({ discount: data.discount, finalAmount: data.finalAmount })
+    } catch (err) {
+      setPromoError(err.response?.data?.error || "That code didn't work.")
+    } finally {
+      setPromoChecking(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -69,6 +95,7 @@ export default function NewErrand() {
         price: Number(price),
         pickup_location: { ...pickupCoords, address: pickupAddress },
         dropoff_location: dropoffAddress ? { address: dropoffAddress } : undefined,
+        promoCode: promoResult ? promoCode.trim() : undefined,
       })
       if (!data.success) {
         setError(data.message || "Couldn't create this errand.")
@@ -204,6 +231,38 @@ export default function NewErrand() {
           </p>
         </div>
 
+        <div>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">
+            Promo code (optional)
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={promoCode}
+              onChange={(e) => {
+                setPromoCode(e.target.value.toUpperCase())
+                setPromoResult(null)
+                setPromoError(null)
+              }}
+              placeholder="e.g. WELCOME10"
+              className="flex-1 rounded-lg border border-hairline bg-panel px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-faint placeholder:font-sans focus:border-amber focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleApplyPromo}
+              disabled={promoChecking || !promoCode.trim()}
+              className="shrink-0 rounded-lg border border-hairline px-4 text-sm font-medium text-muted transition-colors hover:border-amber hover:text-amber disabled:opacity-50"
+            >
+              {promoChecking ? "Checking…" : "Apply"}
+            </button>
+          </div>
+          {promoResult && (
+            <p className="mt-1.5 text-xs text-good">
+              {formatNaira(promoResult.discount)} off — you'll pay {formatNaira(promoResult.finalAmount)}.
+            </p>
+          )}
+          {promoError && <p className="mt-1.5 text-xs text-bad">{promoError}</p>}
+        </div>
+
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-bad/30 bg-bad-dim px-3 py-2.5 text-xs text-bad">
             <X size={13} className="mt-0.5 shrink-0" />
@@ -214,7 +273,7 @@ export default function NewErrand() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-lg bg-amber py-3.5 text-sm font-semibold text-[#1a1206] hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-lg bg-amber py-2.5 text-sm font-semibold text-[#1a1206] hover:opacity-90 disabled:opacity-50"
         >
           {saving ? "Sending your errand…" : "Find me a runner"}
         </button>

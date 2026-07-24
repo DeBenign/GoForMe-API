@@ -12,8 +12,11 @@ export default function ActiveOrderCard({ order, onStart, onComplete, onDecline,
           </div>
           <div className="mt-0.5 font-mono text-[11px] text-faint">#{shortId(order._id)}</div>
         </div>
-        <span className="shrink-0 font-mono text-sm font-semibold text-ink">
-          {formatNaira(order.price)}
+        <span className="shrink-0 text-right">
+          <span className="block font-mono text-sm font-semibold text-ink">
+            {formatNaira(order.runnerPayout || order.price)}
+          </span>
+          <span className="block text-[10px] text-faint">you earn</span>
         </span>
       </div>
 

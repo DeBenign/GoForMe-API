@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, Navigate } from "react-router-dom"
 import { Radio, ArrowRight } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import Alert from "../components/Alert"
 
 export default function Login() {
   const { user, login, loading, error } = useAuth()
@@ -26,7 +27,7 @@ export default function Login() {
           <p className="mt-1 text-sm text-muted">Send someone. Skip the queue.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-hairline bg-panel p-6">
+        <form onSubmit={handleSubmit} className="card p-6">
           <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">Email</label>
           <input
             type="email"
@@ -34,7 +35,7 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="mb-4 w-full rounded-lg border border-hairline bg-panel-raised px-3.5 py-2.5 text-sm text-ink placeholder:text-faint focus:border-amber focus:outline-none"
+            className="input mb-4"
           />
           <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted">Password</label>
           <input
@@ -43,18 +44,12 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="mb-5 w-full rounded-lg border border-hairline bg-panel-raised px-3.5 py-2.5 text-sm text-ink placeholder:text-faint focus:border-amber focus:outline-none"
+            className="input mb-5"
           />
 
-          {error && (
-            <div className="mb-4 rounded-lg border border-bad/30 bg-bad-dim px-3 py-2 text-xs text-bad">{error}</div>
-          )}
+          {error && <Alert type="error" message={error} />}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber py-3 text-sm font-semibold text-[#1a1206] transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="btn-primary mt-4 w-full">
             {loading ? "Signing in…" : "Sign in"}
             {!loading && <ArrowRight size={15} />}
           </button>

@@ -2,6 +2,7 @@
 const User = require("../models/User")
 const Order = require("../models/Order")
 const Runner = require("../models/Runner")
+const { splitCommission } = require("../config/commission")
 
 // ── GET ALL USERS ─────────────────────────────────────
 const getUsers = async (req, res) => {
@@ -29,9 +30,19 @@ const getOrders = async (req, res) => {
 // ── OVERRIDE ORDER (admin edit) ───────────────────────
 const overrideOrder = async (req, res) => {
   try {
+    const updates = { ...req.body }
+
+    // FIX: overriding price without recomputing the commission split left
+    // commissionAmount/runnerPayout pointing at the old price — the runner
+    // could get paid (or the platform credited) an amount that no longer
+    // matched what the customer was actually charged.
+    if (updates.price !== undefined) {
+      Object.assign(updates, splitCommission(Number(updates.price)))
+    }
+
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updates,
       { new: true, runValidators: true }
     )
 

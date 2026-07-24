@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
       // still log in here (role stays "customer" until an admin approves
       // their runner application) so they can see the apply/pending screens.
       if (data.user.role === "admin") {
-        setError("This is an admin account. Please use the dispatch console instead.")
+        setError("This is an admin details you supply. Please use the admin webpage/route instead.")
         return false
       }
       setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })

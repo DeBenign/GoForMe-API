@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from "react"
-import { Wallet as WalletIcon, Star, CheckCircle2, PackageSearch } from "lucide-react"
+import { Wallet as WalletIcon, Star, CheckCircle2, PackageSearch, LogOut } from "lucide-react"
 import api from "../lib/api"
 import { getSocket } from "../lib/socket"
 import { formatNaira } from "../lib/format"
+import { useAuth } from "../context/AuthContext"
 import { useRunnerProfile } from "../context/RunnerProfileContext"
 import TopBar from "../components/TopBar"
 import AvailabilityToggle from "../components/AvailabilityToggle"
 import ActiveOrderCard from "../components/ActiveOrderCard"
+import ChatPanel from "../components/ChatPanel"
 import EmptyState from "../components/EmptyState"
 import Spinner from "../components/Spinner"
 
 export default function Dashboard() {
+  const { logout } = useAuth()
   const { runner, refresh: refreshProfile } = useRunnerProfile()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,11 +92,20 @@ export default function Dashboard() {
     <div className="min-h-screen bg-base">
       <TopBar
         right={
-          <AvailabilityToggle
-            isAvailable={runner?.isAvailable}
-            onChange={() => refreshProfile()}
-            disabled={!!activeOrder}
-          />
+          <div className="flex items-center gap-2">
+            <AvailabilityToggle
+              isAvailable={runner?.isAvailable}
+              onChange={() => refreshProfile()}
+              disabled={!!activeOrder}
+            />
+            <button
+              onClick={logout}
+              aria-label="Sign out"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-hairline text-muted transition-colors hover:border-bad/40 hover:text-bad"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
         }
       />
 
@@ -138,6 +150,7 @@ export default function Dashboard() {
               Your assigned errand
             </div>
             <ActiveOrderCard order={activeOrder} onStart={handleStart} onComplete={handleComplete} onDecline={handleDecline} busy={busy} />
+            <ChatPanel order={activeOrder} />
           </>
         ) : runner?.isAvailable ? (
           <EmptyState

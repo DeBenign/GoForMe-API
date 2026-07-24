@@ -5,6 +5,7 @@ const matchingService = require("../services/matching.service")
 const { getIO } = require("../config/socket")
 const { computeDiscount, recordRedemption } = require("./promoController")
 const { tryQualifyReferralOnOrderComplete } = require("./referralController")
+const { splitCommission } = require("../config/commission")
  
 // ── CREATE ORDER + AUTO MATCH ─────────────────────────
 const createOrder = async (req, res) => {
@@ -89,7 +90,8 @@ const createOrder = async (req, res) => {
       description,
       price: chargeAmount,
       category,
-      status: "pending"
+      status: "pending",
+      ...splitCommission(chargeAmount)
     })
 
     if (appliedPromo) {
@@ -273,7 +275,11 @@ const completeOrder = async (req, res) => {
     order.completedAt = new Date()
     await order.save()
  
-    runner.totalEarnings += order.price
+    // FIX: runner used to be paid the full order.price with zero commission
+    // taken — the platform captured ₦0 revenue on every completed errand.
+    // runnerPayout is set at order creation (see createOrder); the `|| `
+    // fallback only covers orders created before this field existed.
+    runner.totalEarnings += order.runnerPayout || order.price
     runner.completedJobs += 1
     runner.isAvailable    = true
     runner.currentOrder   = null

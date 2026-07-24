@@ -1,6 +1,7 @@
 import { useState } from "react"
 import api from "../lib/api"
 import TopBar from "../components/TopBar"
+import ReferralCard from "../components/ReferralCard"
 import { useAuth } from "../context/AuthContext"
 import { initials } from "../lib/format"
 import { LogOut, Check } from "lucide-react"
@@ -65,16 +66,18 @@ export default function Profile() {
           <button
             type="submit"
             disabled={saving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber py-3 text-sm font-semibold text-[#1a1206] hover:opacity-90 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber py-2.5 text-sm font-semibold text-[#1a1206] hover:opacity-90 disabled:opacity-50"
           >
             {saved ? <Check size={15} /> : null}
             {saving ? "Saving…" : saved ? "Saved" : "Save changes"}
           </button>
         </form>
 
+        <ReferralCard />
+
         <button
           onClick={logout}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-hairline py-3 text-sm font-medium text-bad hover:bg-bad-dim"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-hairline py-2.5 text-sm font-medium text-bad hover:bg-bad-dim"
         >
           <LogOut size={15} /> Log out
         </button>

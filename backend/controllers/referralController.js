@@ -4,6 +4,8 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Wallet = require('../models/Wallet');
 
+const Runner = require('../models/Runner');
+
 function generateReferralCode(name) {
   const prefix = (name || 'GFM').replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase() || 'GFM';
   const suffix = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -102,8 +104,8 @@ exports.tryQualifyReferralOnOrderComplete = async (userId, orderId) => {
   referral.qualifyingOrder = orderId;
   await referral.save();
 
-  await creditWallet(referral.referrer, referral.referrerRewardAmount, 'Referral reward — friend completed their first errand');
-  await creditWallet(referral.referee, referral.refereeRewardAmount, 'Referral reward — welcome credit');
+  await creditUser(referral.referrer, referral.referrerRewardAmount, 'Referral reward — friend completed their first errand');
+  await creditUser(referral.referee, referral.refereeRewardAmount, 'Referral reward — welcome credit');
 
   referral.status = 'rewarded';
   referral.rewardedAt = new Date();
@@ -112,7 +114,19 @@ exports.tryQualifyReferralOnOrderComplete = async (userId, orderId) => {
   return referral;
 };
 
-async function creditWallet(userId, amount, reason) {
+// Runners cash out through Runner.totalEarnings via the Payout flow, not
+// through Wallet.balance — that field is only for customer-side spending.
+// FIX: previously credited Wallet.balance unconditionally, so a runner's
+// referral/welcome bonus was invisible to and unwithdrawable from
+// POST /payouts/request, which only ever checks totalEarnings.
+async function creditUser(userId, amount, reason) {
+  const runner = await Runner.findOne({ user_id: userId, status: 'approved' });
+  if (runner) {
+    runner.totalEarnings += amount;
+    await runner.save();
+    return;
+  }
+
   const wallet = await Wallet.findOne({ user_id: userId });
   if (!wallet) return; // no wallet yet — nothing to credit; the reward is simply skipped rather than crashing the order-completion flow
   wallet.balance += amount;

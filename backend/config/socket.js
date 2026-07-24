@@ -5,7 +5,11 @@ const Message = require("../models/Message")
 
 let io
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:5174")
+// FIX: this default was missing port 5175 (the runner app) — with
+// ALLOWED_ORIGINS unset, the REST API allowed all three local frontends but
+// the Socket.IO server silently rejected the runner app's websocket
+// connection. Kept in sync with server.js's default list.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:5174,http://localhost:5175")
   .split(",")
   .map(o => o.trim())
   .filter(Boolean)

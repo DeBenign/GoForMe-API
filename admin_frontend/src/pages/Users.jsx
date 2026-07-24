@@ -45,7 +45,7 @@ export default function Users() {
       <PageHeader title="Users" sub={`${users.length} registered accounts`} />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative w-full max-w-xs min-w-[200px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             value={query}
