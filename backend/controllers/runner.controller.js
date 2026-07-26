@@ -159,7 +159,32 @@ const getRunner = async (req, res) => {
       return res.status(404).json({ success: false, message: "Runner not found" })
     }
 
-    return res.status(200).json({ success: true, data: runner })
+    // FIX: this had no access restriction at all — any authenticated user
+    // (found while building the admin runner-detail view, which reads bank
+    // details and ID document images from this exact endpoint) could fetch
+    // ANY runner's bank account number and ID/selfie images just by
+    // guessing/incrementing an id, since customer_frontend legitimately
+    // calls this to show the assigned runner's name/rating during an
+    // active order. Only admins and the runner themselves should see the
+    // sensitive fields; everyone else gets the public-safe subset.
+    const isAdmin = req.user.role === "admin"
+    const isSelf = runner.user_id?._id?.toString() === req.user._id.toString()
+
+    if (isAdmin || isSelf) {
+      return res.status(200).json({ success: true, data: runner })
+    }
+
+    const publicRunner = {
+      _id: runner._id,
+      user_id: runner.user_id,
+      rating: runner.rating,
+      totalRatings: runner.totalRatings,
+      completedJobs: runner.completedJobs,
+      isAvailable: runner.isAvailable,
+      status: runner.status
+    }
+
+    return res.status(200).json({ success: true, data: publicRunner })
 
   } catch (error) {
     return res.status(500).json({

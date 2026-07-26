@@ -54,10 +54,26 @@ app.use(cors({
   },
   credentials: true
 }))
-app.use(express.json())
 
 // Base URL
 const BASE_URL = "/api/v1"
+
+// FIX: the Paystack webhook route needs the exact raw request bytes to
+// verify its signature (see payment.controller.js). express.json() below
+// used to run globally FIRST, parse the body, and mark it consumed — so the
+// route's own express.raw() middleware got nothing, and the webhook was
+// verifying a re-serialized JSON.stringify() copy instead of Paystack's
+// actual signed bytes. Skip the global JSON parser for that one path only;
+// its router applies express.raw() itself.
+// FIX: same issue as the payments webhook above — this route also needs
+// raw bytes for its signature check (see payout.controller.js), so it must
+// be excluded from the global JSON parser too.
+app.use((req, res, next) => {
+  if (req.originalUrl === `${BASE_URL}/payments/webhook` || req.originalUrl === `${BASE_URL}/payouts/webhook`) {
+    return next()
+  }
+  return express.json()(req, res, next)
+})
 
 // Routes
 app.use(`${BASE_URL}/auth`, authRoutes)

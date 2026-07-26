@@ -329,9 +329,18 @@ const payoutWebhook = async (req, res) => {
   try {
     const crypto    = require("crypto")
     const signature = req.headers["x-paystack-signature"]
-    const hash      = crypto
+
+    // FIX: this used to hash JSON.stringify(req.body). Two bugs compounded:
+    // (1) the global express.json() parser ran before this route's own
+    // express.raw(), consuming the stream — see server.js — so req.body
+    // was already a parsed object here, not raw bytes; (2) even so,
+    // re-serializing a parsed object with JSON.stringify can produce
+    // different bytes than what Paystack originally signed. Both are fixed
+    // now: req.body here is the actual raw Buffer, and we hash that
+    // directly and parse it ourselves after the signature check.
+    const hash = crypto
       .createHmac("sha512", process.env.PAYSTACK_SECRET)
-      .update(JSON.stringify(req.body))
+      .update(req.body)
       .digest("hex")
 
     if (hash !== signature) {
@@ -341,7 +350,7 @@ const payoutWebhook = async (req, res) => {
     // Always respond 200 immediately to Paystack
     res.sendStatus(200)
 
-    const { event, data } = req.body
+    const { event, data } = JSON.parse(req.body.toString("utf8"))
 
     // ── Transfer success ──────────────────────────────
     if (event === "transfer.success") {

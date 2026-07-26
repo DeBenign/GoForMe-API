@@ -258,7 +258,7 @@ POST {{BASE_URL}}/auth/login
 > `Authorization: Bearer <accessToken>`
 
 ---
-
+OLAT3BF63B
 ## STEP 4 — Fund Wallet
 
 > Minimum ₦100 required before placing any order.

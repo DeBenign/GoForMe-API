@@ -1,0 +1,24 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fvTile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F3EFE7"/>
+    </linearGradient>
+    <linearGradient id="fvMark" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="#FFCE8C"/>
+      <stop offset="0.5" stop-color="#F0A93E"/>
+      <stop offset="1" stop-color="#C2760F"/>
+    </linearGradient>
+    <linearGradient id="fvMarkDeep" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="#F2B45A"/>
+      <stop offset="1" stop-color="#9C5A0C"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#fvTile)"/>
+  <g>
+    <rect x="150" y="290" width="150" height="34" rx="17" fill="url(#fvMarkDeep)" transform="skewY(-14)"/>
+    <rect x="196" y="220" width="150" height="38" rx="19" fill="url(#fvMark)" transform="skewY(-14)"/>
+    <rect x="244" y="150" width="150" height="42" rx="21" fill="url(#fvMark)" transform="skewY(-14)"/>
+    <circle cx="368" cy="128" r="30" fill="url(#fvMark)"/>
+  </g>
+</svg>

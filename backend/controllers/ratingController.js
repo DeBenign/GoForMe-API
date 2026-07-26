@@ -16,7 +16,7 @@ const Runner = require('../models/Runner');
  */
 exports.submitRating = async (req, res) => {
   try {
-    const { orderId, stars, comment, tags } = req.body;
+    const { orderId, stars, comment, tags, platformStars, platformComment } = req.body;
     const raterId = req.user._id.toString();
 
     const order = await Order.findById(orderId);
@@ -42,6 +42,17 @@ exports.submitRating = async (req, res) => {
       return res.status(400).json({ error: 'Order has no counterpart to rate' });
     }
 
+    // Platform satisfaction is a customer-only signal — separate from how
+    // the runner personally did — so it's silently ignored if a runner
+    // sends it, rather than erroring on an extra field they shouldn't set.
+    const isCustomerRating = raterRole === 'customer';
+    if (isCustomerRating && platformStars !== undefined && platformStars !== null) {
+      const n = Number(platformStars);
+      if (!Number.isInteger(n) || n < 1 || n > 5) {
+        return res.status(400).json({ error: 'platformStars must be a whole number from 1 to 5' });
+      }
+    }
+
     const rating = await Rating.create({
       order: orderId,
       rater: raterId,
@@ -50,6 +61,8 @@ exports.submitRating = async (req, res) => {
       stars,
       comment: comment || '',
       tags: tags || [],
+      platformStars: isCustomerRating && platformStars ? Number(platformStars) : null,
+      platformComment: isCustomerRating ? (platformComment || '') : '',
     });
 
     const aggregate = await recomputeAggregate(rateeId);
@@ -126,3 +139,30 @@ async function recomputeAggregate(userId, { persist = false } = {}) {
 }
 
 exports._recomputeAggregate = recomputeAggregate;
+
+/**
+ * GET /api/v1/ratings/platform (admin only)
+ * Aggregate of the separate "how was your GoForMe experience" signal —
+ * independent of individual runner ratings — across every completed order.
+ */
+exports.getPlatformRatings = async (req, res) => {
+  try {
+    const [stats] = await Rating.aggregate([
+      { $match: { platformStars: { $ne: null } } },
+      { $group: { _id: null, avg: { $avg: '$platformStars' }, count: { $sum: 1 } } },
+    ]);
+
+    const recent = await Rating.find({ platformStars: { $ne: null } })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('platformStars platformComment createdAt order');
+
+    return res.json({
+      average: stats ? Math.round(stats.avg * 10) / 10 : 0,
+      count: stats ? stats.count : 0,
+      recent,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to load platform ratings', detail: err.message });
+  }
+};

@@ -28,7 +28,14 @@ exports.initSocket = (server) => {
       const token = socket.handshake.auth?.token
       if (!token) return next(new Error("No token provided"))
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET)
+      // FIX (root cause of chat + live updates not working at all): this
+      // called jwt.verify(token, secret), but `jwt` here is
+      // utils/jwt.js's { generateToken, verifyToken } wrapper — it has no
+      // .verify() method. Every handshake threw inside this try block and
+      // fell into the catch below, so EVERY socket connection was silently
+      // rejected with "Unauthorized" — chat:send/order:join/live location
+      // updates never worked for anyone, on either side of a chat.
+      const decoded = jwt.verifyToken(token)
       socket.user = decoded
       next()
     } catch (err) {

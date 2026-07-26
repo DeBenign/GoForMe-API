@@ -17,7 +17,12 @@ const getUsers = async (req, res) => {
 // ── GET ALL ORDERS ────────────────────────────────────
 const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
+    const { user_id, runner_id } = req.query
+    const query = {}
+    if (user_id) query.user_id = user_id
+    if (runner_id) query.runner_id = runner_id
+
+    const orders = await Order.find(query)
       .populate("user_id", "name email")
       .populate("runner_id")
       .sort({ createdAt: -1 })
@@ -32,11 +37,23 @@ const overrideOrder = async (req, res) => {
   try {
     const updates = { ...req.body }
 
-    // FIX: overriding price without recomputing the commission split left
-    // commissionAmount/runnerPayout pointing at the old price — the runner
-    // could get paid (or the platform credited) an amount that no longer
-    // matched what the customer was actually charged.
-    if (updates.price !== undefined) {
+    // FIX: overriding errandFee (or the legacy price field) without
+    // recomputing the commission split left commissionAmount/runnerPayout
+    // pointing at the old amount — the runner could get paid (or the
+    // platform credited) an amount that no longer matched what was actually
+    // charged. Commission is split from errandFee only — see
+    // config/errandFee.js / models/Order.js for why itemBudget is excluded.
+    if (updates.errandFee !== undefined) {
+      Object.assign(updates, splitCommission(Number(updates.errandFee)))
+      // Keep the total price in sync with the parts that make it up
+      const existing = await Order.findById(req.params.id)
+      if (existing) {
+        updates.price = (updates.itemBudget ?? existing.itemBudget ?? 0) + Number(updates.errandFee)
+      }
+    } else if (updates.price !== undefined) {
+      // Legacy path — admin overrode the total directly with no fee
+      // breakdown; treat the whole thing as errand fee for commission
+      // purposes since we don't know the itemBudget/fee split intended.
       Object.assign(updates, splitCommission(Number(updates.price)))
     }
 

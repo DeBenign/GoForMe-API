@@ -6,6 +6,7 @@ import Spinner from "../components/Spinner"
 import EmptyState from "../components/EmptyState"
 import StatusBadge from "../components/StatusBadge"
 import { formatNaira, initials } from "../lib/format"
+import RunnerDetailModal from "../components/RunnerDetailModal"
 
 export default function Runners() {
   const [runners, setRunners] = useState([])
@@ -13,6 +14,7 @@ export default function Runners() {
   const [error, setError] = useState(null)
   const [tab, setTab] = useState("pending")
   const [busyId, setBusyId] = useState(null)
+  const [selectedRunner, setSelectedRunner] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -78,7 +80,11 @@ export default function Runners() {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((r) => (
-            <div key={r._id} className="rounded-lg border border-hairline bg-panel p-4">
+            <div
+              key={r._id}
+              onClick={() => setSelectedRunner(r)}
+              className="cursor-pointer rounded-lg border border-hairline bg-panel p-4 hover:border-amber/40"
+            >
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-panel-raised font-mono text-xs font-semibold text-muted">
@@ -128,14 +134,20 @@ export default function Runners() {
               {r.status === "pending" && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => act(r._id, "approve")}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      act(r._id, "approve")
+                    }}
                     disabled={busyId === r._id}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-good-dim border border-good/30 py-1.5 text-xs font-semibold text-good hover:bg-good/20 disabled:opacity-50"
                   >
                     <Check size={13} /> Approve
                   </button>
                   <button
-                    onClick={() => act(r._id, "reject")}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      act(r._id, "reject")
+                    }}
                     disabled={busyId === r._id}
                     className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-bad-dim border border-bad/30 py-1.5 text-xs font-semibold text-bad hover:bg-bad/20 disabled:opacity-50"
                   >
@@ -146,6 +158,10 @@ export default function Runners() {
             </div>
           ))}
         </div>
+      )}
+
+      {selectedRunner && (
+        <RunnerDetailModal runner={selectedRunner} onClose={() => setSelectedRunner(null)} />
       )}
     </div>
   )

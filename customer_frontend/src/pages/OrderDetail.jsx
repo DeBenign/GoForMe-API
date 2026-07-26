@@ -5,6 +5,7 @@ import api from "../lib/api"
 import { getSocket } from "../lib/socket"
 import Spinner from "../components/Spinner"
 import StatusBadge from "../components/StatusBadge"
+import RateOrderCard, { RatedThanksCard } from "../components/RateOrderCard"
 import { formatNaira, formatTime, shortId, STATUS_COPY, initials } from "../lib/format"
 
 const STEPS = ["pending", "accepted", "in_progress", "completed"]
@@ -275,6 +276,18 @@ export default function OrderDetail() {
               </button>
             </form>
           </div>
+        )}
+
+        {order.status === "completed" && (
+          order.ratedByMe ? (
+            <RatedThanksCard />
+          ) : (
+            <RateOrderCard
+              order={order}
+              runnerName={runner?.user_id?.name}
+              onRated={() => setOrder((prev) => (prev ? { ...prev, ratedByMe: true } : prev))}
+            />
+          )
         )}
 
         <div className="flex gap-2">

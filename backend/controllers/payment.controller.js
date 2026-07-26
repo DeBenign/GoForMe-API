@@ -1,5 +1,6 @@
 // controllers/payment.controller.js
 const paymentService = require("../services/payment.service")
+const { creditWalletForReference } = require("../services/wallet.service")
 
 // ── INITIALIZE PAYMENT ────────────────────────────────
 const initializePayment = async (req, res) => {
@@ -56,10 +57,33 @@ const verifyPayment = async (req, res) => {
 }
 
 // ── PAYSTACK WEBHOOK ──────────────────────────────────
+// This is the safety net for wallet top-ups: if the customer closes the tab,
+// loses connectivity, or their bank's own redirect drops the callback_url,
+// the frontend's /wallet/verify call never happens. Paystack still calls
+// this server-to-server, so we credit the wallet from here too.
+// creditWalletForReference dedupes on reference, so it's harmless if
+// /wallet/verify already credited it — this only fills the gap when it didn't.
 const webhook = async (req, res) => {
   try {
     const signature = req.headers["x-paystack-signature"]
-    await paymentService.handleWebhook(req.body, signature)
+    // req.body is the raw Buffer here (see server.js — this route is
+    // excluded from the global express.json() parser so the signature check
+    // below sees Paystack's exact bytes, not a re-serialized copy)
+    const event = JSON.parse(req.body.toString("utf8"))
+
+    const isValid = paymentService.verifyWebhookSignature(req.body, signature)
+    if (!isValid) {
+      console.warn("Paystack webhook: invalid signature, ignoring")
+      return res.sendStatus(200)
+    }
+
+    if (event.event === "charge.success") {
+      const reference = event.data.reference
+      const result = await creditWalletForReference(reference)
+      if (result.credited) {
+        console.log(`Webhook credited wallet for reference ${reference}`)
+      }
+    }
 
     // Always return 200 to Paystack immediately
     return res.sendStatus(200)

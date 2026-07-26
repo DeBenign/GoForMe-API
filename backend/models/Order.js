@@ -38,18 +38,44 @@ const orderSchema = new mongoose.Schema(
     },
 
     // FIX: was "budget" but order.controller references "price" — unified to price
+    // `price` is now the TOTAL charged to the customer's wallet:
+    // price = itemBudget + errandFee (see below). Kept as its own field
+    // (rather than always recomputed) so historical orders don't shift if
+    // fee config changes later, and so every part of the app that already
+    // reads order.price keeps working unchanged.
     price: {
       type: Number,
       required: [true, "Price is required"],
       min: [0, "Price cannot be negative"]
     },
 
-    // Platform commission — split out of `price` at order creation, using
-    // whatever rate was configured that day. Stored per-order (not just
-    // computed live from a global rate) so historical orders keep the rate
-    // that actually applied to them if the rate changes later, and so
-    // completeOrder always knows exactly what to pay the runner without
-    // recomputing anything.
+    // Cash the runner spends on the customer's behalf (groceries, meds,
+    // etc.) — reimbursed to the runner in full, never commissioned. Set by
+    // the customer when posting the errand.
+    itemBudget: {
+      type: Number,
+      default: 0
+    },
+
+    // The runner's service charge for actually running the errand —
+    // auto-calculated from the distance between pickup and drop-off (see
+    // config/errandFee.js) rather than left to the customer to guess. THIS
+    // is the only part commission is taken from.
+    errandFee: {
+      type: Number,
+      default: 0
+    },
+    distanceKm: {
+      type: Number,
+      default: 0
+    },
+
+    // Platform commission — split out of `errandFee` (not the whole price)
+    // at order creation, using whatever rate was configured that day.
+    // Stored per-order (not just computed live from a global rate) so
+    // historical orders keep the rate that actually applied to them if the
+    // rate changes later, and so completeOrder always knows exactly what to
+    // pay the runner without recomputing anything.
     commissionRate: {
       type: Number,
       default: 0
@@ -58,6 +84,8 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    // The runner's share of the errand fee only. Their total payout at
+    // completion is itemBudget + runnerPayout (see completeOrder).
     runnerPayout: {
       type: Number,
       default: 0

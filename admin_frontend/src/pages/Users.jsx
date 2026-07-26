@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader"
 import Spinner from "../components/Spinner"
 import EmptyState from "../components/EmptyState"
 import { formatDate, initials } from "../lib/format"
+import UserDetailModal from "../components/UserDetailModal"
 
 const ROLE_STYLE = {
   admin: "text-amber bg-amber-dim border-amber/30",
@@ -18,6 +19,7 @@ export default function Users() {
   const [error, setError] = useState(null)
   const [query, setQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
+  const [selectedUser, setSelectedUser] = useState(null)
 
   useEffect(() => {
     api
@@ -85,7 +87,11 @@ export default function Users() {
             </thead>
             <tbody className="divide-y divide-hairline">
               {filtered.map((u) => (
-                <tr key={u._id} className="hover:bg-panel-raised">
+                <tr
+                  key={u._id}
+                  onClick={() => setSelectedUser(u)}
+                  className="cursor-pointer hover:bg-panel-raised"
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-panel-raised font-mono text-[10px] font-semibold text-muted">
@@ -118,6 +124,10 @@ export default function Users() {
           </table>
         )}
       </div>
+
+      {selectedUser && (
+        <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+      )}
     </div>
   )
 }

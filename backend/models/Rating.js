@@ -45,6 +45,22 @@ const ratingSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Separate from `stars` (which rates the runner/customer counterpart).
+    // Only customers rate the platform itself — the overall app experience
+    // for that errand (matching speed, app usability, fee fairness, etc.)
+    // — independent of how the runner personally did. Left null for
+    // runner-submitted ratings.
+    platformStars: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: null,
+    },
+    platformComment: {
+      type: String,
+      maxlength: 500,
+      default: '',
+    },
   },
   { timestamps: true }
 );

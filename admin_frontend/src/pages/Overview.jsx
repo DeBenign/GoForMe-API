@@ -14,17 +14,19 @@ export default function Overview() {
   const [runners, setRunners] = useState([])
   const [disputes, setDisputes] = useState([])
   const [payouts, setPayouts] = useState([])
+  const [platformRating, setPlatformRating] = useState({ average: 0, count: 0 })
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
-        const [ordersRes, usersRes, runnersRes, disputesRes, payoutsRes] = await Promise.all([
+        const [ordersRes, usersRes, runnersRes, disputesRes, payoutsRes, platformRatingRes] = await Promise.all([
           api.get("/admin/orders"),
           api.get("/admin/users"),
           api.get("/runners"),
           api.get("/admin/disputes", { params: { limit: 5 } }),
           api.get("/admin/payouts", { params: { limit: 5 } }),
+          api.get("/ratings/platform"),
         ])
         if (cancelled) return
         setOrders(ordersRes.data.data || [])
@@ -32,6 +34,7 @@ export default function Overview() {
         setRunners(runnersRes.data.data || [])
         setDisputes(disputesRes.data.data || [])
         setPayouts(payoutsRes.data.data || [])
+        setPlatformRating({ average: platformRatingRes.data.average || 0, count: platformRatingRes.data.count || 0 })
         setState({ loading: false, error: null })
       } catch (err) {
         if (!cancelled)
@@ -107,6 +110,11 @@ export default function Overview() {
         <StatCard label="Active errands" value={stats.activeOrders} sub={`${stats.totalOrders} total`} accent />
         <StatCard label="Completed GMV" value={formatNaira(stats.gmv)} sub="all-time" />
         <StatCard label="Platform revenue" value={formatNaira(stats.platformRevenue)} sub="commission, all-time" accent />
+        <StatCard
+          label="Platform rating"
+          value={platformRating.count ? `${platformRating.average.toFixed(1)} ★` : "—"}
+          sub={`${platformRating.count} customer ratings`}
+        />
         <StatCard label="Runners" value={stats.approvedRunners} sub={`${stats.pendingRunners} awaiting review`} />
         <StatCard label="Open disputes" value={stats.openDisputes} sub={`${disputes.length} recent`} />
       </div>

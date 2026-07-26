@@ -67,6 +67,15 @@ const getUsers = async (req, res) => {
 // ── GET SINGLE USER ───────────────────────────────────
 const getUser = async (req, res) => {
   try {
+    // FIX: this had no access restriction — any authenticated user could
+    // view any other user's full profile (email, phone, referral info) by
+    // guessing/incrementing an id. No frontend actually needs cross-user
+    // access here (customer_frontend only uses this route to fetch its own
+    // profile), so restrict it to the user themselves or an admin.
+    if (req.user.role !== "admin" && req.user._id.toString() !== req.params.id) {
+      return res.status(403).json({ success: false, message: "Access denied" })
+    }
+
     // FIX: removed unnecessary !id check — Express always fills req.params.id
     const user = await User.findById(req.params.id).select("-password -otp -refreshToken")
 

@@ -1,21 +1,32 @@
 const Order  = require("../models/Order")
 const Runner = require("../models/Runner")
 const Wallet = require("../models/Wallet")
+const Rating = require("../models/Rating")
 const matchingService = require("../services/matching.service")
 const { getIO } = require("../config/socket")
 const { computeDiscount, recordRedemption } = require("./promoController")
 const { tryQualifyReferralOnOrderComplete } = require("./referralController")
 const { splitCommission } = require("../config/commission")
+const { computeErrandFee } = require("../config/errandFee")
  
 // ── CREATE ORDER + AUTO MATCH ─────────────────────────
 const createOrder = async (req, res) => {
   try {
-    const { title, pickup_location, dropoff_location, description, price, category, promoCode } = req.body
+    // FIX (root cause of "errand fee not included"): `price` used to be the
+    // ENTIRE charge, decided by the customer, and 15% of that whole amount
+    // was taken as commission — including money meant to buy the customer's
+    // groceries/meds. That shortchanged the runner on both the reimbursement
+    // for what they spent AND their pay for the trip. Now the customer sets
+    // `itemBudget` (cash the runner spends on their behalf, reimbursed in
+    // full), and the errand fee — the runner's service charge — is
+    // calculated automatically from the pickup→drop-off distance. Only the
+    // errand fee is commissioned.
+    const { title, pickup_location, dropoff_location, description, itemBudget, category, promoCode } = req.body
 
-    if (!pickup_location || !price) {
+    if (!pickup_location || itemBudget === undefined || itemBudget === null) {
       return res.status(400).json({
         success: false,
-        message: "Pickup location and price are required"
+        message: "Pickup location and item budget are required"
       })
     }
 
@@ -26,6 +37,9 @@ const createOrder = async (req, res) => {
         message: `Category must be one of: ${VALID_CATEGORIES.join(", ")}`
       })
     }
+
+    const { distanceKm, errandFee } = computeErrandFee(pickup_location, dropoff_location)
+    const price = Number(itemBudget) + errandFee
 
     // Promo code (optional) — validated before wallet deduction so the
     // discounted amount, not the sticker price, is what actually gets charged.
@@ -81,7 +95,13 @@ const createOrder = async (req, res) => {
       reason: appliedPromo ? `Errand payment (promo ${appliedPromo.code} applied)` : "Errand payment"
     })
     await wallet.save()
- 
+
+    // A promo discount comes out of the errand fee, never the item budget —
+    // the runner must always be reimbursed in full for what they actually
+    // spend on the customer's behalf, discount or not.
+    const discount = price - chargeAmount
+    const discountedErrandFee = Math.max(0, errandFee - discount)
+
     let order = await Order.create({
       user_id: req.user._id,
       title,
@@ -89,9 +109,12 @@ const createOrder = async (req, res) => {
       dropoff_location,
       description,
       price: chargeAmount,
+      itemBudget: Number(itemBudget),
+      errandFee: discountedErrandFee,
+      distanceKm,
       category,
       status: "pending",
-      ...splitCommission(chargeAmount)
+      ...splitCommission(discountedErrandFee)
     })
 
     if (appliedPromo) {
@@ -182,13 +205,20 @@ const getOrder = async (req, res) => {
     const order = await Order.findById(req.params.id)
       .populate("runner_id")
       .populate("user_id", "name phone")
- 
+
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" })
     }
- 
-    return res.json({ success: true, data: order })
- 
+
+    // So the frontend knows whether to show the "rate this errand" form or
+    // a thank-you state, without a separate round trip per order.
+    const orderObj = order.toObject()
+    if (order.status === "completed") {
+      orderObj.ratedByMe = !!(await Rating.exists({ order: order._id, rater: req.user._id }))
+    }
+
+    return res.json({ success: true, data: orderObj })
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -277,9 +307,13 @@ const completeOrder = async (req, res) => {
  
     // FIX: runner used to be paid the full order.price with zero commission
     // taken — the platform captured ₦0 revenue on every completed errand.
-    // runnerPayout is set at order creation (see createOrder); the `|| `
-    // fallback only covers orders created before this field existed.
-    runner.totalEarnings += order.runnerPayout || order.price
+    // FIX: this used to only credit runnerPayout, which — now that
+    // runnerPayout is just the runner's cut of the errand FEE — would have
+    // left the runner unreimbursed for the item budget they actually spent
+    // at the store. Runners must receive itemBudget in full, plus their
+    // share of the errand fee. The `|| order.price` fallback only covers
+    // orders created before this split existed.
+    runner.totalEarnings += ((order.itemBudget || 0) + order.runnerPayout) || order.price
     runner.completedJobs += 1
     runner.isAvailable    = true
     runner.currentOrder   = null

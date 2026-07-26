@@ -3,6 +3,7 @@
 const Dispute = require("../models/Dispute")
 const Order   = require("../models/Order")
 const Wallet  = require("../models/Wallet")
+const Runner  = require("../models/Runner")
 const notificationService = require("../services/notification.service")
 
 // ─────────────────────────────────────────────────────
@@ -232,22 +233,60 @@ const resolveDispute = async (req, res) => {
     }
 
     // Handle refund if resolution includes one
+    let finalResolutionNote = resolution_note || ""
+
     if (resolution === "refund_issued" && refund_amount > 0) {
       const wallet = await Wallet.findOne({ user_id: dispute.raised_by._id })
 
       if (wallet) {
         wallet.balance += refund_amount
+        wallet.transactions.push({
+          amount: refund_amount,
+          type  : "credit",
+          reason: `Dispute refund — order #${dispute.order_id?._id || dispute.order_id}`
+        })
         await wallet.save()
 
         dispute.refund_amount = refund_amount
         dispute.refund_issued = true
+      }
+
+      // FIX: crediting the customer's wallet used to be the whole story —
+      // but the runner's totalEarnings from this order was never touched,
+      // so a refunded customer and a fully-paid runner both walked away
+      // with money from the same errand, and the platform ate the loss
+      // with no record of why. If this dispute is against a runner (i.e.
+      // raised by the customer, not the runner disputing the customer),
+      // claw back what that runner earned from this specific order — up to
+      // what they actually earned and up to what they currently have, so
+      // this can never push totalEarnings negative.
+      const runner = await Runner.findOne({ user_id: dispute.against._id })
+      if (runner) {
+        const order = dispute.order_id
+        const orderEarnings = order ? (order.itemBudget || 0) + (order.runnerPayout || 0) : 0
+        const clawback = Math.min(refund_amount, orderEarnings, runner.totalEarnings)
+
+        if (clawback > 0) {
+          runner.totalEarnings -= clawback
+          await runner.save()
+        }
+
+        // If the runner had already withdrawn the money (or the order
+        // earnings don't cover the full refund), there's a shortfall the
+        // platform is absorbing — surface it so an admin can follow up
+        // (e.g. deduct from a future payout, or write it off deliberately)
+        // rather than it silently disappearing.
+        if (clawback < refund_amount) {
+          finalResolutionNote =
+            `${finalResolutionNote} [Clawback note: only ₦${clawback} of the ₦${refund_amount} refund could be recovered from the runner's earnings — ₦${refund_amount - clawback} shortfall needs manual follow-up.]`.trim()
+        }
       }
     }
 
     // Update dispute
     dispute.status          = "resolved"
     dispute.resolution      = resolution
-    dispute.resolution_note = resolution_note || ""
+    dispute.resolution_note = finalResolutionNote
     dispute.resolved_by     = req.user._id
     dispute.resolved_at     = new Date()
     await dispute.save()

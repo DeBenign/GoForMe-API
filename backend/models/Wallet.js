@@ -35,6 +35,13 @@ const walletSchema = new mongoose.Schema(
           type   : String,
           default: ""
         },
+        // FIX: needed so we can dedupe — the same Paystack reference can arrive
+        // twice (once via the browser redirect calling /wallet/verify, once via
+        // the webhook), and we must only credit the wallet once per reference.
+        reference: {
+          type   : String,
+          default: null
+        },
         createdAt: {
           type   : Date,
           default: Date.now
